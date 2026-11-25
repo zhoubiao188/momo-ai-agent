@@ -1,5 +1,7 @@
 # MoMo AIOps Agent
 
+> 📖 配套文章：[《【AI Agent 实战】Java 全链路：Spring Boot 3 + Spring Cloud Gateway + Vue3/React18 打造能“干活”的运维 Agent》](https://blog.csdn.net/qwe86314/article/details/171359935)
+
 > 一个能真正跑起来的 **Java AI Agent** 实战项目：Spring Boot 3 + Spring Cloud Gateway + Vue 3 / React 18，用 Function Calling 把「查订单、查日志、查运行手册、发起退款」串成一条可观测的 Agent 链路，前端 SSE 实时看到每一步。
 
 不是一个只会调一次 Chat Completions 的 demo：它有工具编排、流式协议、会话记忆、输入护栏、超时与步数止损、审计友好的事件流，以及两套可选前端。
