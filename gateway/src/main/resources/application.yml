@@ -1,0 +1,72 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        # SSE 需要长连接，这里给足 5 分钟；普通接口靠业务侧超时控制
+        response-timeout: 300s
+      routes:
+        - id: agent-service
+          uri: ${services.agent:http://localhost:8081}
+          predicates:
+            - Path=/api/agent/**
+        - id: biz-service
+          uri: ${services.biz:http://localhost:8082}
+          predicates:
+            - Path=/api/orders/**,/api/logs/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: bizCircuitBreaker
+                fallbackUri: forward:/fallback/biz
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+            allowed-methods: ["GET", "POST", "DELETE", "OPTIONS"]
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+
+gateway:
+  jwt:
+    # 生产环境请用环境变量注入，长度至少 32 字节
+    secret: ${GATEWAY_JWT_SECRET:momo-ai-agent-demo-secret-key-please-change-me-2026}
+    ttl: ${GATEWAY_JWT_TTL:PT8H}
+  rate-limit:
+    capacity: 60
+    refill-per-second: 10
+  demo-user:
+    username: ${DEMO_USERNAME:admin}
+    password: ${DEMO_PASSWORD:admin123}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,metrics
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

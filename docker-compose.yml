@@ -1,0 +1,62 @@
+services:
+  biz-service:
+    build:
+      context: .
+      dockerfile: docker/biz.Dockerfile
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  agent-service:
+    build:
+      context: .
+      dockerfile: docker/agent.Dockerfile
+    environment:
+      # 想要接真实模型：把 mode 改成 openai 并传入 API Key
+      AGENT_LLM_MODE: ${AGENT_LLM_MODE:-mock}
+      AGENT_LLM_BASE_URL: ${AGENT_LLM_BASE_URL:-https://api.deepseek.com/v1}
+      AGENT_LLM_API_KEY: ${AGENT_LLM_API_KEY:-}
+      AGENT_LLM_MODEL: ${AGENT_LLM_MODEL:-deepseek-chat}
+      AGENT_ALLOW_MUTATING: ${AGENT_ALLOW_MUTATING:-true}
+      BIZ_BASE_URL: http://biz-service:8082
+    ports:
+      - "8081:8081"
+    depends_on:
+      biz-service:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    environment:
+      services.agent: http://agent-service:8081
+      services.biz: http://biz-service:8082
+      GATEWAY_JWT_SECRET: ${GATEWAY_JWT_SECRET:-momo-ai-agent-demo-secret-key-please-change-me-2026}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - agent-service
+      - biz-service
+
+  web-vue:
+    build:
+      context: .
+      dockerfile: docker/web-vue.Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - gateway
+
+  web-react:
+    build:
+      context: .
+      dockerfile: docker/web-react.Dockerfile
+    ports:
+      - "5174:80"
+    depends_on:
+      - gateway

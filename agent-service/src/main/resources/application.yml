@@ -1,0 +1,47 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: agent-service
+  mvc:
+    async:
+      request-timeout: 300000
+
+agent:
+  llm:
+    # mock：本地剧本模型，无需 Key 即可跑通完整 Agent 编排
+    # openai：任意 OpenAI 兼容接口（DeepSeek / Qwen / 自建 vLLM）
+    mode: ${AGENT_LLM_MODE:mock}
+    base-url: ${AGENT_LLM_BASE_URL:https://api.deepseek.com/v1}
+    api-key: ${AGENT_LLM_API_KEY:}
+    model: ${AGENT_LLM_MODEL:deepseek-chat}
+    temperature: 0.2
+    timeout: 120s
+    max-steps: 6
+    max-history-messages: 24
+  tools:
+    biz-base-url: ${BIZ_BASE_URL:http://localhost:8082}
+    timeout: 8s
+    # 生产环境务必设为 false，写操作改走人工审批
+    allow-mutating: ${AGENT_ALLOW_MUTATING:true}
+  session:
+    ttl: 30m
+    max-sessions: 500
+  guard:
+    max-question-chars: 2000
+    max-tool-arguments-chars: 2000
+    max-tool-calls-per-step: 4
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.momo.ai: INFO
